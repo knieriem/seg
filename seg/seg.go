@@ -27,7 +27,8 @@ func New(conn io.ReadWriter, size int, name string) *Seg {
 
 const (
 	startBit = 1 << 7
-
+)
+const (
 	expectStartOrSingle = iota
 	expectContinuation
 )
@@ -47,7 +48,7 @@ func (s *Seg) ReadMsg() ([]byte, error) {
 			return nil, err
 		}
 		if n < 1 {
-			s.trace("<-", "??", []byte{})
+			s.trace("->", "??", []byte{})
 			state = expectStartOrSingle
 			s.nErr++
 			continue
@@ -64,7 +65,7 @@ func (s *Seg) ReadMsg() ([]byte, error) {
 			if (c & startBit) == 0 {
 				// no start frame, skip
 				s.nErr++
-				s.trace("<-", "??", frame)
+				s.trace("->", "??", frame)
 				continue
 			}
 			state = expectContinuation
@@ -76,7 +77,7 @@ func (s *Seg) ReadMsg() ([]byte, error) {
 			if (c&startBit) != 0 || c != iCont {
 				state = expectStartOrSingle
 				s.nErr++
-				s.trace("<-", "??", frame)
+				s.trace("->", "??", frame)
 				continue
 			}
 			s.trace("->", "cont", frame)
