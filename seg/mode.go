@@ -45,7 +45,7 @@ func (m *Mode) Send() (buf []byte, err error) {
 	return
 }
 
-func (m *Mode) Receive(tMax time.Duration) (buf, msg []byte, err error) {
+func (m *Mode) Receive(tMax time.Duration, _ func(int) error) (buf, msg []byte, err error) {
 	buf, err = m.readMgr.Read(tMax, 0)
 	if err != nil {
 		return
