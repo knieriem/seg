@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"modbus"
-	"modbus/hash/crc16"
+	"te/hash/crc16"
 	"modbus/rtu"
 	"modbus/seg"
 )
