@@ -41,9 +41,6 @@ func (s *Seg) ReadMsg() ([]byte, error) {
 	b := s.rBuf
 	for {
 		n, err := s.conn.Read(b)
-		if n == 0 {
-			break
-		}
 		if err != nil {
 			return nil, err
 		}
