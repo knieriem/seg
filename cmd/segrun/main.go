@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"modbus"
-	"te/hash/crc16"
 	"modbus/rtu"
 	"modbus/seg"
+	"te/hash/crc16"
 )
 
 const (
