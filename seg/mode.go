@@ -39,7 +39,10 @@ func (m *Mode) MsgWriter() io.Writer {
 }
 
 func (m *Mode) Send() (buf []byte, err error) {
-	m.readMgr.Start()
+	err = m.readMgr.Start()
+	if err != nil {
+		return
+	}
 	buf = m.buf.Bytes()
 	_, err = m.Write(buf)
 	if err != nil {
