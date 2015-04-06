@@ -9,7 +9,7 @@ import (
 	"modbus/rtu"
 )
 
-type Mode struct {
+type Conn struct {
 	*Seg
 	buf *bytes.Buffer
 
@@ -17,8 +17,8 @@ type Mode struct {
 	ExitC   chan int
 }
 
-func NewTransmissionMode(conn io.ReadWriter, segSize int, name string) *Mode {
-	m := new(Mode)
+func NewNetConn(conn io.ReadWriter, segSize int, name string) *Conn {
+	m := new(Conn)
 	m.Seg = New(conn, segSize, name)
 
 	m.buf = new(bytes.Buffer)
@@ -29,16 +29,16 @@ func NewTransmissionMode(conn io.ReadWriter, segSize int, name string) *Mode {
 	return m
 }
 
-func (m *Mode) Name() string {
+func (m *Conn) Name() string {
 	return "seg"
 }
 
-func (m *Mode) MsgWriter() io.Writer {
+func (m *Conn) MsgWriter() io.Writer {
 	m.buf.Reset()
 	return m.buf
 }
 
-func (m *Mode) Send() (buf []byte, err error) {
+func (m *Conn) Send() (buf []byte, err error) {
 	err = m.readMgr.Start()
 	if err != nil {
 		return
@@ -51,7 +51,7 @@ func (m *Mode) Send() (buf []byte, err error) {
 	return
 }
 
-func (m *Mode) Receive(tMax time.Duration, _ func(int) error) (buf, msg []byte, err error) {
+func (m *Conn) Receive(tMax time.Duration, _ func(int) error) (buf, msg []byte, err error) {
 	buf, err = m.readMgr.Read(tMax, 0)
 	if err != nil {
 		return
