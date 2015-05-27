@@ -10,8 +10,8 @@ func init() {
 		Name:           "seg/can",
 		RequiredFields: netconn.CanIDFields,
 		OptionalFields: netconn.DevFields,
-		AddrType:       []string{"can"},
 		Dial:           dial,
+		InterfaceGroup: &canAdapters,
 	})
 }
 

@@ -183,3 +183,20 @@ func flags(m *can.Msg) (s string) {
 	}
 	return
 }
+
+var canAdapters = netconn.InterfaceGroup{
+	Name:       "CAN adapters",
+	Interfaces: canInterfaces,
+	Type:       "can",
+}
+
+func canInterfaces() (list []netconn.Interface) {
+	for _, name := range can.Scan() {
+		list = append(list, netconn.Interface{
+			Name: name.String(),
+			Desc: name.Format("<OMIT ID>", ", ", ""),
+			Elem: name,
+		})
+	}
+	return
+}
