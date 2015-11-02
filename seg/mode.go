@@ -29,6 +29,10 @@ func NewNetConn(conn io.ReadWriter, segSize int, name string) *Conn {
 	return m
 }
 
+func (m *Conn) SetIntrC(c <-chan error) {
+	m.readMgr.IntrC = c
+}
+
 func (m *Conn) Name() string {
 	return "seg"
 }
