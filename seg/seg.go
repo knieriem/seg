@@ -59,7 +59,7 @@ func (s *Seg) ReadMsg() ([]byte, error) {
 				s.trace("->", "single", frame)
 				return b[1:n], nil
 			}
-			if (c & startBit) == 0 {
+			if c&startBit == 0 {
 				// no start frame, skip
 				s.nErr++
 				s.trace("->", "??", frame)
@@ -71,7 +71,7 @@ func (s *Seg) ReadMsg() ([]byte, error) {
 			s.trace("->", "start", frame)
 
 		case expectContinuation:
-			if (c&startBit) != 0 || c != iCont {
+			if c&startBit != 0 || c != iCont {
 				state = expectStartOrSingle
 				s.nErr++
 				s.trace("->", "??", frame)
