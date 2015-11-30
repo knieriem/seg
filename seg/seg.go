@@ -98,7 +98,7 @@ func (s *Seg) Write(msg []byte) (nMsg int, err error) {
 		if n <= nb {
 			// its the first (single) or last message
 			if iCont == 0 {
-				b[0] = 0
+				b[0] = 0 | startBit
 				event = "single"
 			} else {
 				b[0] = iCont
