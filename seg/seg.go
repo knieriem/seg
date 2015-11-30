@@ -26,7 +26,7 @@ func New(conn io.ReadWriter, size int, name string) *Seg {
 }
 
 const (
-	startBit = 1 << 7
+	startBit byte = 1 << 7
 )
 const (
 	expectStartOrSingle = iota
@@ -54,7 +54,7 @@ func (s *Seg) ReadMsg() ([]byte, error) {
 		frame := b[:n]
 		switch state {
 		case expectStartOrSingle:
-			if c == 0 {
+			if c & ^startBit == 0 {
 				// single message
 				s.trace("->", "single", frame)
 				return b[1:n], nil
