@@ -2,6 +2,7 @@ package seg
 
 import (
 	"io"
+	"time"
 )
 
 type Seg struct {
@@ -13,6 +14,8 @@ type Seg struct {
 	nErr int
 	wBuf []byte
 
+	PrevWriteMultiple bool
+	WriteDelay time.Duration
 	Tracef func(format string, a ...interface{})
 }
 
@@ -100,6 +103,7 @@ func (s *Seg) Write(msg []byte) (nMsg int, err error) {
 			if iCont == 0 {
 				b[0] = 0 | startBit
 				event = "single"
+				s.PrevWriteMultiple = false
 			} else {
 				b[0] = iCont
 				event = "cont"
@@ -111,6 +115,7 @@ func (s *Seg) Write(msg []byte) (nMsg int, err error) {
 			nMsg += n
 			return
 		}
+		s.PrevWriteMultiple = true
 		if iCont == 0 {
 			b[0] = byte((n-1)/nb) | startBit
 			event = "start"
@@ -124,6 +129,9 @@ func (s *Seg) Write(msg []byte) (nMsg int, err error) {
 		s.trace("<-", event, b)
 		if err != nil {
 			return
+		}
+		if s.WriteDelay != 0 {
+			time.Sleep(s.WriteDelay)
 		}
 		nMsg += nb
 		iCont++

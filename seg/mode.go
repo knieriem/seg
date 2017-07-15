@@ -58,6 +58,9 @@ func (m *Conn) Send() (buf []byte, err error) {
 func (m *Conn) Receive(tMax time.Duration, _ func(int) error) (buf, msg []byte, err error) {
 	buf, err = m.readMgr.Read(tMax, 0)
 	if err != nil {
+		if err == modbus.ErrTimeout && m.Seg.PrevWriteMultiple {
+			m.Seg.WriteDelay += 5*time.Millisecond
+		}
 		return
 	}
 	if len(buf) < 2 {
