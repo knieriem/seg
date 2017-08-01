@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+var DefaultWriteDelay time.Duration = 0
+
 type Seg struct {
 	conn io.ReadWriter
 	name string
@@ -25,6 +27,7 @@ func New(conn io.ReadWriter, size int, name string) *Seg {
 	s.name = name
 	s.rBuf = make([]byte, size)
 	s.wBuf = make([]byte, size)
+	s.WriteDelay = DefaultWriteDelay
 	return s
 }
 
