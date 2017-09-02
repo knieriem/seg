@@ -59,7 +59,7 @@ func (m *Conn) Receive(tMax time.Duration, _ func(int) error) (buf, msg []byte, 
 	buf, err = m.readMgr.Read(tMax, 0)
 	if err != nil {
 		if err == modbus.ErrTimeout && m.Seg.PrevWriteMultiple {
-			m.Seg.WriteDelay += 5*time.Millisecond
+			m.Seg.WriteDelay += 5 * time.Millisecond
 		}
 		return
 	}

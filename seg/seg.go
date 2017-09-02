@@ -17,8 +17,8 @@ type Seg struct {
 	wBuf []byte
 
 	PrevWriteMultiple bool
-	WriteDelay time.Duration
-	Tracef func(format string, a ...interface{})
+	WriteDelay        time.Duration
+	Tracef            func(format string, a ...interface{})
 }
 
 func New(conn io.ReadWriter, size int, name string) *Seg {
