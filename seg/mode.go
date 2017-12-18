@@ -14,7 +14,7 @@ type Conn struct {
 	buf *bytes.Buffer
 
 	readMgr *rtu.ReadMgr
-	ExitC   chan int
+	ExitC   chan error
 }
 
 func NewNetConn(conn io.ReadWriter, segSize int, name string) *Conn {
@@ -23,7 +23,7 @@ func NewNetConn(conn io.ReadWriter, segSize int, name string) *Conn {
 
 	m.buf = new(bytes.Buffer)
 
-	m.ExitC = make(chan int, 1)
+	m.ExitC = make(chan error, 1)
 	m.readMgr = rtu.NewReadMgr(m.ReadMsg, m.ExitC)
 
 	return m
