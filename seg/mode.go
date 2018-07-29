@@ -64,7 +64,7 @@ func (m *Conn) Receive(tMax time.Duration, _ func(int) error) (buf, msg []byte, 
 		return
 	}
 	if len(buf) < 2 {
-		err = modbus.ErrMsgTooShort
+		err = modbus.NewInvalidMsgLen(len(buf), 2)
 		return
 	}
 	msg = buf
