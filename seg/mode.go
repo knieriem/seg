@@ -5,8 +5,8 @@ import (
 	"io"
 	"time"
 
-	"modbus"
-	"modbus/rtu"
+	"github.com/knieriem/modbus"
+	"github.com/knieriem/modbus/rtu"
 )
 
 type Conn struct {

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
-	"can"
-	"modbus/netconn"
+	"github.com/knieriem/can"
+	"github.com/knieriem/modbus/netconn"
 )
 
 var (

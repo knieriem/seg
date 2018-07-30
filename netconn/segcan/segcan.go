@@ -1,8 +1,8 @@
 package segcan
 
 import (
-	"modbus/netconn"
-	"modbus/seg"
+	"github.com/knieriem/modbus/netconn"
+	"github.com/knieriem/modbus/seg"
 )
 
 func init() {
