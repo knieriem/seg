@@ -9,10 +9,10 @@ import (
 	"os/exec"
 	"time"
 
-	"modbus"
-	"modbus/rtu"
-	"modbus/seg"
-	"te/hash/crc16"
+	"github.com/knieriem/hash/crc16"
+	"github.com/knieriem/modbus"
+	"github.com/knieriem/modbus/rtu"
+	"github.com/knieriem/seg"
 )
 
 const (

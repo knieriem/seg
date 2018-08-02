@@ -1,4 +1,4 @@
-package seg
+package modbus
 
 import (
 	"bytes"
@@ -7,10 +7,11 @@ import (
 
 	"github.com/knieriem/modbus"
 	"github.com/knieriem/modbus/rtu"
+	"github.com/knieriem/seg"
 )
 
 type Conn struct {
-	*Seg
+	*seg.Seg
 	buf *bytes.Buffer
 
 	readMgr *rtu.ReadMgr
@@ -19,7 +20,7 @@ type Conn struct {
 
 func NewNetConn(conn io.ReadWriter, segSize int, name string) *Conn {
 	m := new(Conn)
-	m.Seg = New(conn, segSize, name)
+	m.Seg = seg.New(conn, segSize, name)
 
 	m.buf = new(bytes.Buffer)
 
