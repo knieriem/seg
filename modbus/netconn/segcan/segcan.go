@@ -28,7 +28,7 @@ func dial(cf *netconn.Conf) (conn *netconn.Conn, err error) {
 
 	conn = &netconn.Conn{
 		Addr:       cf.MakeAddr(id, true),
-		Device:     id,
+		DeviceName: id,
 		DeviceInfo: name.Format("\t(", ",", ")"),
 		NetConn:    nc,
 		Closer:     f,

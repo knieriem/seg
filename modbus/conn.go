@@ -16,11 +16,13 @@ type Conn struct {
 
 	readMgr *rtu.ReadMgr
 	ExitC   chan error
+	dev     io.ReadWriter
 }
 
 func NewNetConn(conn io.ReadWriter, segSize int, name string) *Conn {
 	m := new(Conn)
 	m.Seg = seg.New(conn, segSize, name)
+	m.dev = conn
 
 	m.buf = new(bytes.Buffer)
 
@@ -36,6 +38,10 @@ func (m *Conn) SetIntrC(c <-chan error) {
 
 func (m *Conn) Name() string {
 	return "seg"
+}
+
+func (m *Conn) Device() interface{} {
+	return m.dev
 }
 
 func (m *Conn) MsgWriter() io.Writer {
