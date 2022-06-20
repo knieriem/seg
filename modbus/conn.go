@@ -2,6 +2,7 @@ package modbus
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"time"
 
@@ -32,10 +33,6 @@ func NewNetConn(conn io.ReadWriter, segSize int, name string) *Conn {
 	return m
 }
 
-func (m *Conn) SetIntrC(c <-chan error) {
-	m.readMgr.IntrC = c
-}
-
 func (m *Conn) Name() string {
 	return "seg"
 }
@@ -62,18 +59,23 @@ func (m *Conn) Send() (buf []byte, err error) {
 	return
 }
 
-func (m *Conn) Receive(tMax time.Duration, _ *modbus.ExpectedRespLenSpec) (buf, msg []byte, err error) {
-	buf, err = m.readMgr.Read(tMax, 0)
+func (m *Conn) Receive(ctx context.Context, tMax time.Duration, _ *modbus.ExpectedRespLenSpec) (modbus.ADU, error) {
+	var adu modbus.ADU
+	adu.PDUStart = 1
+	adu.PDUEnd = 0
+
+	b, err := m.readMgr.Read(ctx, tMax, 0)
+	adu.Bytes = b
 	if err != nil {
 		if err == modbus.ErrTimeout && m.Seg.PrevWriteMultiple {
 			m.Seg.WriteDelay += 5 * time.Millisecond
 		}
-		return
+		return adu, err
 	}
-	if len(buf) < 2 {
-		err = modbus.NewInvalidMsgLen(len(buf), 2)
-		return
+	n := len(adu.Bytes)
+	if n < 2 {
+		err = modbus.NewInvalidLen(modbus.MsgContextADU, n, 2)
+		return adu, err
 	}
-	msg = buf
-	return
+	return adu, nil
 }
