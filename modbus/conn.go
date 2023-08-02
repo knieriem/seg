@@ -46,17 +46,23 @@ func (m *Conn) MsgWriter() io.Writer {
 	return m.buf
 }
 
-func (m *Conn) Send() (buf []byte, err error) {
+func (m *Conn) Send() (adu modbus.ADU, err error) {
+	buf := m.buf.Bytes()
+	adu.PDUStart = 1
+	adu.PDUEnd = 0
+	adu.Bytes = buf
+
 	err = m.readMgr.Start()
 	if err != nil {
-		return
+		return adu, err
 	}
-	buf = m.buf.Bytes()
+
 	_, err = m.Write(buf)
 	if err != nil {
 		m.readMgr.Cancel()
 	}
-	return
+
+	return adu, err
 }
 
 func (m *Conn) Receive(ctx context.Context, tMax time.Duration, _ *modbus.ExpectedRespLenSpec) (modbus.ADU, error) {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -69,7 +70,7 @@ func main() {
 	go func() {
 		for {
 			rm.Start()
-			buf, err := rm.Read(3*time.Second, 30*time.Millisecond)
+			buf, err := rm.Read(context.TODO(), 3*time.Second, 30*time.Millisecond)
 			if err != nil {
 				if err == modbus.ErrTimeout {
 					continue
