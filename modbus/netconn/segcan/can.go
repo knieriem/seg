@@ -60,8 +60,9 @@ func (c *canRW) Read(buf []byte) (n int, err error) {
 			continue
 		}
 		if msg.Id == c.Rxid.ID {
-			copy(buf, msg.Data[:])
-			n = msg.Len
+			data := msg.Data()
+			copy(buf, data)
+			n = len(data)
 			break
 		}
 	}
@@ -87,9 +88,7 @@ func (c *canRW) Write(buf []byte) (n int, err error) {
 		m.Flags |= can.ExtFrame
 	}
 	m.Id = c.Txid.ID
-	copy(m.Data[:], buf)
-	n = len(buf)
-	m.Len = n
+	m.SetData(buf)
 	err = c.dev.WriteMsg(&m)
 	return
 }
@@ -148,7 +147,7 @@ func (t *CANTracer) Read(buf []can.Msg) (n int, err error) {
 		for i := range buf[:n] {
 			m := &buf[i]
 			if !m.IsStatus() {
-				fmt.Fprintf(errOut, "-> CAN %0*X\t% x\n", idDigits(m), m.Id, m.Data[:m.Len])
+				fmt.Fprintf(errOut, "-> CAN %0*X\t% x\n", idDigits(m), m.Id, m.Data())
 			} else {
 				fmt.Fprintf(errOut, "-> CAN %s\n", flags(m))
 			}
@@ -159,7 +158,7 @@ func (t *CANTracer) Read(buf []can.Msg) (n int, err error) {
 
 func (t *CANTracer) WriteMsg(m *can.Msg) error {
 	if t.enabled && !m.IsStatus() {
-		fmt.Fprintf(errOut, "<- CAN %0*X\t% x\n", idDigits(m), m.Id, m.Data[:m.Len])
+		fmt.Fprintf(errOut, "<- CAN %0*X\t% x\n", idDigits(m), m.Id, m.Data())
 	}
 	return t.Device.WriteMsg(m)
 }
