@@ -12,8 +12,8 @@ import (
 
 	"github.com/knieriem/hash/crc16"
 	"github.com/knieriem/modbus"
-	"github.com/knieriem/modbus/rtu"
 	"github.com/knieriem/seg"
+	"github.com/knieriem/serframe"
 )
 
 const (
@@ -58,30 +58,29 @@ func main() {
 		}
 	}
 
-	var buf = make([]byte, 512)
-	rm := rtu.NewReadMgr(func() ([]byte, error) {
-		n, err := f.Read(buf)
-		if err != nil {
-			return nil, err
-		}
-		return buf[:n], nil
-	}, nil)
+	stream := serframe.NewStream(f,
+		serframe.WithInternalBufSize(512),
+	)
 
 	go func() {
+		buf := make([]byte, 1024)
 		for {
-			rm.Start()
-			buf, err := rm.Read(context.TODO(), 3*time.Second, 30*time.Millisecond)
+			stream.StartReception(buf)
+			data, err := stream.ReadFrame(context.TODO(),
+				serframe.WithInitialTimeout(3*time.Second),
+				serframe.WithInterByteTimeout(30*time.Millisecond),
+			)
 			if err != nil {
 				if err == modbus.ErrTimeout {
 					continue
 				}
 				log.Fatal(err)
 			}
-			_, err = tm.Write(buf[:len(buf)-2])
+			_, err = tm.Write(data[:len(data)-2])
 			if fakeMultiAcks {
 				for i := 0; i < 3; i++ {
 					time.Sleep(50 * time.Millisecond)
-					_, err = tm.Write(buf[:len(buf)-2])
+					_, err = tm.Write(data[:len(data)-2])
 				}
 				fakeMultiAcks = false
 			}

@@ -9,15 +9,17 @@ import (
 	"github.com/knieriem/modbus"
 	"github.com/knieriem/modbus/rtu"
 	"github.com/knieriem/seg"
+	"github.com/knieriem/serframe"
 )
 
 type Conn struct {
 	*seg.Seg
-	buf *bytes.Buffer
+	rBuf []byte
+	buf  *bytes.Buffer
 
-	readMgr *rtu.ReadMgr
-	ExitC   chan error
-	dev     io.ReadWriter
+	stream *serframe.Stream
+	ExitC  chan error
+	dev    io.ReadWriter
 }
 
 func NewNetConn(conn io.ReadWriter, segSize int, name string) *Conn {
@@ -25,11 +27,12 @@ func NewNetConn(conn io.ReadWriter, segSize int, name string) *Conn {
 	m.Seg = seg.New(conn, segSize, name)
 	m.dev = conn
 
+	m.rBuf = make([]byte, 254)
 	m.buf = new(bytes.Buffer)
 
-	m.ExitC = make(chan error, 1)
-	m.readMgr = rtu.NewReadMgr(m.ReadMsg, m.ExitC)
-
+	m.stream = serframe.NewStream(nil,
+		serframe.WithInternalReadBytesFunc(m.ReadMsg),
+	)
 	return m
 }
 
@@ -52,14 +55,14 @@ func (m *Conn) Send() (adu modbus.ADU, err error) {
 	adu.PDUEnd = 0
 	adu.Bytes = buf
 
-	err = m.readMgr.Start()
+	err = m.stream.StartReception(m.rBuf)
 	if err != nil {
 		return adu, err
 	}
 
 	_, err = m.Write(buf)
 	if err != nil {
-		m.readMgr.Cancel()
+		m.stream.CancelReception()
 	}
 
 	return adu, err
@@ -70,9 +73,10 @@ func (m *Conn) Receive(ctx context.Context, tMax time.Duration, _ *modbus.Expect
 	adu.PDUStart = 1
 	adu.PDUEnd = 0
 
-	b, err := m.readMgr.Read(ctx, tMax, 0)
+	b, err := m.stream.ReadFrame(ctx, serframe.WithInitialTimeout(tMax))
 	adu.Bytes = b
 	if err != nil {
+		err = rtu.ConvertSerframeError(err)
 		if err == modbus.ErrTimeout && m.Seg.PrevWriteMultiple {
 			m.Seg.WriteDelay += 5 * time.Millisecond
 		}
