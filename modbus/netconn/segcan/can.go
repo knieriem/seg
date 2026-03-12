@@ -27,6 +27,11 @@ func openCAN(cf *netconn.Conf) (c *canRW, err error) {
 	if len(cf.Options) != 0 {
 		devSpec += "," + strings.Join(cf.Options, ",")
 	}
+	if cf.Rxid.Extframe {
+		devSpec += "," + fmt.Sprintf("f%08x", cf.Rxid.ID)
+	} else {
+		devSpec += "," + fmt.Sprintf("f%03x", cf.Rxid.ID)
+	}
 
 	dev, err := can.Open(devSpec)
 	if err != nil {
