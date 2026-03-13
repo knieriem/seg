@@ -21,15 +21,15 @@ func dial(cf *netconn.Conf) (conn *netconn.Conn, err error) {
 		return
 	}
 
-	name := f.dev.Name()
-	id := name.String()
+	info := f.dev.Info()
+	id := info.String()
 	f.dev = devWrapper.wrap(f.dev, id)
 	nc := seg.NewNetConn(f, 8, "can")
 
 	conn = &netconn.Conn{
 		Addr:       cf.MakeAddr(id, true),
 		DeviceName: id,
-		DeviceInfo: name.Format("\t(", ",", ")"),
+		DeviceInfo: info.Format("\t(", ",", ")"),
 		NetConn:    nc,
 		Closer:     f,
 		ExitC:      nc.ExitC,
