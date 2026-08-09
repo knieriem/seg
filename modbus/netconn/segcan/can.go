@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -20,29 +22,135 @@ type canRW struct {
 	*netconn.Conf
 	dev       can.Device
 	buf, rBuf []can.Msg
+
+	fdMode bool
+	txID   uint32
+	rxID   uint32
+	txExt  bool
+	rxExt  bool
+	segMax int
 }
 
-func openCAN(cf *netconn.Conf) (c *canRW, err error) {
+func openCAN(cf *netconn.Conf) (*canRW, error) {
 	devSpec := cf.Device
+
+	var c canRW
+	err := decodeOptions(&c, cf)
+	if err != nil {
+		return nil, err
+	}
+
 	if len(cf.Options) != 0 {
 		devSpec += "," + strings.Join(cf.Options, ",")
 	}
-	if cf.Rxid.Extframe {
-		devSpec += "," + fmt.Sprintf("f%08x", cf.Rxid.ID)
+	if c.rxExt {
+		devSpec += "," + fmt.Sprintf("f%08x", c.rxID)
 	} else {
-		devSpec += "," + fmt.Sprintf("f%03x", cf.Rxid.ID)
+		devSpec += "," + fmt.Sprintf("f%03x", c.rxID)
 	}
 
 	dev, err := can.Open(devSpec)
 	if err != nil {
-		return
+		return nil, err
 	}
-	c = &canRW{
-		Conf: cf,
-		dev:  dev,
-		buf:  make([]can.Msg, 64),
+
+	c.Conf = cf
+	c.dev = dev
+	c.buf = make([]can.Msg, 64)
+	return &c, nil
+}
+
+func decodeOptions(c *canRW, cf *netconn.Conf) error {
+	canOpts := cf.Options[:0]
+
+	c.segMax = 8
+
+	// Use defaults from deprecated, explicit fields
+	c.txID = cf.Txid.ID
+	c.txExt = cf.Txid.Extframe
+	c.rxID = cf.Rxid.ID
+	c.rxExt = cf.Rxid.Extframe
+
+	for i, o := range cf.Options {
+		stem, ok := strings.CutPrefix(o, "seg.")
+		if !ok {
+			if len(canOpts) == i {
+				canOpts = canOpts[:i+1]
+				continue
+			}
+			canOpts = append(canOpts, o)
+			continue
+		}
+		if len(stem) < 2 {
+			return errors.New("seg: syntax error")
+		}
+		i := strings.IndexByte(stem, ':')
+		if i == -1 {
+			if stem == "fd" {
+				c.fdMode = true
+				continue
+			}
+			return errors.New("seg: missing colon")
+		}
+
+		key, val := stem[:i], stem[i+1:]
+		switch key {
+		case "max":
+			i, err := strconv.Atoi(val)
+			if err != nil {
+				return err
+			}
+			if !slices.Contains(can.ValidFDSizes, i) {
+				return fmt.Errorf("seg.max: invalid value: %q", val)
+			}
+			c.segMax = i
+			c.fdMode = true
+
+		case "tx":
+			id, ext, err := parseID(val)
+			if err != nil {
+				return err
+			}
+			c.txID = id
+			c.txExt = ext
+
+		case "rx":
+			id, ext, err := parseID(val)
+			if err != nil {
+				return err
+			}
+			c.rxID = id
+			c.rxExt = ext
+
+		default:
+			return fmt.Errorf("seg: invalid key: %q", key)
+		}
 	}
-	return
+
+	if c.fdMode && c.segMax == 8 {
+		// Ensure default if seg.max has not been set
+		c.segMax = 64
+	}
+	if c.txID == 0 {
+		return errors.New("seg: missing tx id")
+	}
+	if c.rxID == 0 {
+		return errors.New("seg: missing rx id")
+	}
+	cf.Options = canOpts
+	return nil
+}
+
+func parseID(v string) (id uint32, extFrame bool, err error) {
+	n := len(v) - strings.Count(v, "_")
+	if n > 3 {
+		extFrame = true
+	}
+	u, err := strconv.ParseUint("0x"+v, 0, 32)
+	if err != nil {
+		return 0, false, err
+	}
+	return uint32(u), extFrame, nil
 }
 
 func (c *canRW) Read(buf []byte) (n int, err error) {
@@ -58,13 +166,10 @@ func (c *canRW) Read(buf []byte) (n int, err error) {
 		if msg.IsStatus() {
 			continue
 		}
-		if c.Rxid.Extframe && !msg.ExtFrame() {
+		if c.rxExt != msg.ExtFrame() {
 			continue
 		}
-		if !c.Rxid.Extframe && msg.ExtFrame() {
-			continue
-		}
-		if msg.Id == c.Rxid.ID {
+		if msg.Id == c.rxID {
 			data := msg.Data()
 			copy(buf, data)
 			n = len(data)
@@ -88,12 +193,14 @@ func (c *canRW) fillBuf() (err error) {
 
 func (c *canRW) Write(buf []byte) (n int, err error) {
 	var m can.Msg
+	var data can.PlainData
 
-	if c.Txid.Extframe {
+	if c.txExt {
 		m.Flags |= can.ExtFrame
 	}
-	m.Id = c.Txid.ID
-	m.SetData(buf)
+	m.Id = c.txID
+	data = buf
+	m.Attach(&data)
 	err = c.dev.WriteMsg(&m)
 	return
 }

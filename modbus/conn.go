@@ -22,9 +22,9 @@ type Conn struct {
 	dev    io.ReadWriter
 }
 
-func NewNetConn(conn io.ReadWriter, segSize int, name string) *Conn {
+func NewNetConn(conn io.ReadWriter, segSize int, name string, options ...seg.Option) *Conn {
 	m := new(Conn)
-	m.Seg = seg.New(conn, segSize, name)
+	m.Seg = seg.New(conn, segSize, name, options...)
 	m.dev = conn
 
 	m.rBuf = make([]byte, 254)

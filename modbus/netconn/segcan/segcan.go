@@ -2,14 +2,14 @@ package segcan
 
 import (
 	"github.com/knieriem/modbus/netconn"
-	seg "github.com/knieriem/seg/modbus"
+	"github.com/knieriem/seg"
+	mod "github.com/knieriem/seg/modbus"
 )
 
 func init() {
 	netconn.RegisterProtocol(&netconn.Proto{
 		Name:           "seg/can",
-		RequiredFields: netconn.CanIDFields,
-		OptionalFields: netconn.DevFields,
+		OptionalFields: netconn.DevFields | netconn.CanIDFields,
 		Dial:           dial,
 		InterfaceGroup: &canAdapters,
 	})
@@ -24,7 +24,12 @@ func dial(cf *netconn.Conf) (conn *netconn.Conn, err error) {
 	info := f.dev.Info()
 	id := info.String()
 	f.dev = devWrapper.wrap(f.dev, id)
-	nc := seg.NewNetConn(f, 8, "can")
+
+	var opts []seg.Option
+	if f.fdMode {
+		opts = append(opts, seg.WithStrategy(seg.CANFDStrategy(f.segMax)))
+	}
+	nc := mod.NewNetConn(f, f.segMax, "can", opts...)
 
 	conn = &netconn.Conn{
 		Addr:       cf.MakeAddr(id, true),
