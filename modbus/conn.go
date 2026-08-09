@@ -40,7 +40,7 @@ func (m *Conn) Name() string {
 	return "seg"
 }
 
-func (m *Conn) Device() interface{} {
+func (m *Conn) Device() any {
 	return m.dev
 }
 

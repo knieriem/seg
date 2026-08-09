@@ -84,8 +84,8 @@ func decodeOptions(c *canRW, cf *netconn.Conf) error {
 		if len(stem) < 2 {
 			return errors.New("seg: syntax error")
 		}
-		i := strings.IndexByte(stem, ':')
-		if i == -1 {
+		before, after, ok0 := strings.Cut(stem, ":")
+		if !ok0 {
 			if stem == "fd" {
 				c.fdMode = true
 				continue
@@ -93,7 +93,7 @@ func decodeOptions(c *canRW, cf *netconn.Conf) error {
 			return errors.New("seg: missing colon")
 		}
 
-		key, val := stem[:i], stem[i+1:]
+		key, val := before, after
 		switch key {
 		case "max":
 			i, err := strconv.Atoi(val)

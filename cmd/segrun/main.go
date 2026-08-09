@@ -53,7 +53,7 @@ func main() {
 
 	tm := seg.New(c, *frameSize, "can")
 	if *trace {
-		tm.Tracef = func(format string, a ...interface{}) {
+		tm.Tracef = func(format string, a ...any) {
 			fmt.Fprintf(os.Stderr, format, a...)
 		}
 	}
@@ -78,7 +78,7 @@ func main() {
 			}
 			_, err = tm.Write(data[:len(data)-2])
 			if fakeMultiAcks {
-				for i := 0; i < 3; i++ {
+				for range 3 {
 					time.Sleep(50 * time.Millisecond)
 					_, err = tm.Write(data[:len(data)-2])
 				}

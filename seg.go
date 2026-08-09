@@ -22,10 +22,7 @@ func WithStrategy(st Strategy) Option {
 
 // defaultStrategy creates a uniform greedy strategy based on max frame capacity (segSize - 1 control byte).
 func defaultStrategy(segSize int) Strategy {
-	maxCap := segSize - 1
-	if maxCap < 1 {
-		maxCap = 1
-	}
+	maxCap := max(segSize-1, 1)
 
 	return func(msgLen int) (int, iter.Seq[int]) {
 		nFrames := (msgLen + maxCap - 1) / maxCap
@@ -33,10 +30,7 @@ func defaultStrategy(segSize int) Strategy {
 		seq := func(yield func(int) bool) {
 			rem := msgLen
 			for rem > 0 {
-				cap := maxCap
-				if rem < maxCap {
-					cap = rem
-				}
+				cap := min(rem, maxCap)
 				if !yield(cap) {
 					return
 				}
