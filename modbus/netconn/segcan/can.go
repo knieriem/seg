@@ -24,6 +24,7 @@ type canRW struct {
 	buf, rBuf []can.Msg
 
 	fdMode bool
+	fdBRS  bool
 	txID   uint32
 	rxID   uint32
 	txExt  bool
@@ -85,16 +86,29 @@ func decodeOptions(c *canRW, cf *netconn.Conf) error {
 			return errors.New("seg: syntax error")
 		}
 		before, after, ok0 := strings.Cut(stem, ":")
-		if !ok0 {
-			if stem == "fd" {
-				c.fdMode = true
-				continue
+		key, val := before, after
+		boolVal := !ok0
+		if ok0 && slices.Contains([]string{"fd", "fd.brs"}, key) {
+			switch val {
+			case "0":
+				boolVal = false
+			case "1":
+				boolVal = true
+			default:
+				return fmt.Errorf("seg.%s: invalid value: %q", key, val)
 			}
-			return errors.New("seg: missing colon")
 		}
 
-		key, val := before, after
 		switch key {
+		case "fd":
+			c.fdMode = boolVal
+
+		case "fd.brs":
+			c.fdBRS = boolVal
+			if boolVal {
+				c.fdMode = true
+			}
+
 		case "max":
 			i, err := strconv.Atoi(val)
 			if err != nil {
@@ -197,6 +211,9 @@ func (c *canRW) Write(buf []byte) (n int, err error) {
 
 	if c.txExt {
 		m.Flags |= can.ExtFrame
+	}
+	if c.fdBRS {
+		m.Flags |= can.FDSwitchBitrate
 	}
 	m.Id = c.txID
 	data = buf
