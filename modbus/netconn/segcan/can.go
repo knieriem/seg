@@ -50,7 +50,7 @@ func openCAN(cf *netconn.Conf) (*canRW, error) {
 		devSpec += "," + fmt.Sprintf("f%03x", c.rxID)
 	}
 
-	dev, err := can.Open(devSpec)
+	dev, err := can.Open(devSpec, can.WithStatusMsgs())
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +207,6 @@ func (c *canRW) fillBuf() (err error) {
 
 func (c *canRW) Write(buf []byte) (n int, err error) {
 	var m can.Msg
-	var data can.PlainData
 
 	if c.txExt {
 		m.Flags |= can.ExtFrame
@@ -216,8 +215,7 @@ func (c *canRW) Write(buf []byte) (n int, err error) {
 		m.Flags |= can.FDSwitchBitrate
 	}
 	m.Id = c.txID
-	data = buf
-	m.Attach(&data)
+	m.SetData(buf)
 	err = c.dev.WriteMsg(&m)
 	return
 }
@@ -275,10 +273,10 @@ func (t *CANTracer) Read(buf []can.Msg) (n int, err error) {
 	if t.enabled && err == nil {
 		for i := range buf[:n] {
 			m := &buf[i]
-			if !m.IsStatus() {
+			if st, ok := m.Status(); !ok {
 				fmt.Fprintf(errOut, "-> CAN %0*X\t% x\n", idDigits(m), m.Id, m.Data())
 			} else {
-				fmt.Fprintf(errOut, "-> CAN %s\n", flags(m))
+				fmt.Fprintf(errOut, "-> CAN %s\n", flags(st))
 			}
 		}
 	}
@@ -299,17 +297,16 @@ func idDigits(m *can.Msg) int {
 	return 3
 }
 
-func flags(m *can.Msg) (s string) {
-	if m.Test(can.ErrorActive) {
-		s += "ERROR ACTIVE"
+func flags(st can.Status) string {
+	switch st.State {
+	case can.ErrorWarning:
+		return "ERROR WARNING"
+	case can.ErrorPassive:
+		return "ERROR PASSIVE"
+	case can.BusOff:
+		return "BUSOFF"
 	}
-	if m.Test(can.ErrorPassive) {
-		s += "ERROR PASSIVE"
-	}
-	if m.Test(can.BusOff) {
-		s += "BUSOFF"
-	}
-	return
+	return ""
 }
 
 var canAdapters = netconn.InterfaceGroup{
